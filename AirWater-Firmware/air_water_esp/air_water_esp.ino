@@ -2,10 +2,19 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #define CS_PIN D8
+//#include <NTPClient.h>
+//#include <WiFiUdp.h>
+
+const long utcOffsetInSeconds = 25200;
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+
+// Define NTP Client to get time
+//WiFiUDP ntpUDP;
+//NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
 
 
-const char* ssid = "alpha";  // Enter SSID here
-const char* password = "password";  //Enter Password here
+const char* ssid = "KOOMPI #1";  // Enter SSID here
+const char* password = "koompi123";  //Enter Password here
 ESP8266WebServer server(80);
 
 String TemperatureOUT, TemperatureIN;
@@ -37,12 +46,13 @@ void setup() {
   }
    Serial.println("Memory init success");
   server.begin();
-  
+//  timeClient.begin();
   Serial.println("HTTP server started");
   
 }
 
 void loop() {
+//  timeClient.update();
   // put your main code here, to run repeatedly:
     server.handleClient();
 
@@ -65,13 +75,18 @@ String SendHTML(String Temperatureinstat,String Humidityinstat, String Temperatu
   ptr +="<div id=\"webpage\">\n";
   ptr +="<h1>Vitamin Air Humidity & Temperature</h1>\n";
   
-  ptr +="<p>Temperature: ";
+  ptr +="<p>TemperatureInSide: ";
   ptr += Temperatureinstat;
   ptr +="&#8451;</p>";
   ptr +="<p>Humidity: ";
   ptr += Humidityinstat;
   ptr +="%</p>";
-
+  ptr +="<p>TemperatureOutSide: ";
+  ptr += Temperatureoutstat;
+  ptr +="&#8451;</p>";
+  ptr +="<p>Humidity: ";
+  ptr += Humidityoutstat;
+  ptr +="%</p>";
   ptr +="<p>Dew Point or Vaporize Starting ";
   ptr += DewPointstat;
   ptr += "&#8451;</p>";
@@ -85,12 +100,19 @@ String SendHTML(String Temperatureinstat,String Humidityinstat, String Temperatu
 }
 
 void handle_OnConnect() {
+//  Serial.print(daysOfTheWeek[timeClient.getDay()]);
+//  Serial.print(", ");
+//  Serial.print(timeClient.getHours());
+//  Serial.print(":");
+//  Serial.print(timeClient.getMinutes());
+//  Serial.print(":");
+//  Serial.println(timeClient.getSeconds());
   TextReceived = Serial.readString();
   TemperatureOUT = TextReceived.substring(TextReceived.indexOf("outt")+5,TextReceived.indexOf("outt")+11);// Gets the values of the temperature
   HumidityOUT = TextReceived.substring(TextReceived.indexOf("outh")+5,TextReceived.indexOf("outh")+11);// Gets the values of the humidity 
   TemperatureIN = TextReceived.substring(TextReceived.indexOf("int")+4,TextReceived.indexOf("int")+9);
   HumidityIN = TextReceived.substring(TextReceived.indexOf("inh")+4,TextReceived.indexOf("inh")+9);
-  WaterTemp = TextReceived.substring(TextReceived.indexOf("wint")+5,TextReceived.indexOf("wint")+9);
+  WaterTemp = TextReceived.substring(TextReceived.indexOf("wint")+4,TextReceived.indexOf("wint")+9);
   
   DewPoint =  TextReceived.substring(TextReceived.indexOf("dp")+3,TextReceived.indexOf("dp")+9);
   server.send(200, "text/html", SendHTML(TemperatureIN,HumidityIN,TemperatureOUT,HumidityOUT,WaterTemp, DewPoint )); 

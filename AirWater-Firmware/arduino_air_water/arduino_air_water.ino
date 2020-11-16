@@ -15,7 +15,7 @@
 
 uint8_t DHTin = 11; 
 uint8_t DHTout = 10;
-float humidity_in, humidity_out, temp_in, temp_out, inwater, dewpoint;
+float humidity_in, humidity_out, temp_in, temp_out, inwater, dewpoint,alpha;
 
 DHT dhtinside(DHTin, DHTTYPE);                
 DHT dhtoutside(DHTout, DHTTYPE); 
@@ -50,10 +50,21 @@ void loop() {
     delay(100);
     float inwater = dsb_in.getTempCByIndex(0); 
     temp_in = dhtinside.readTemperature(); // Gets the values of the temperature
-    humidity_in = dhtinside.readHumidity(); // Gets the values of the humidity  
+    humidity_in = dhtinside.readHumidity();
+    delay(100);// Gets the values of the humidity  
     temp_out = dhtoutside.readTemperature();
     humidity_out = dhtoutside.readHumidity();
-    dewpoint = (temp_out - (100 - humidity_out) / 5);
+    delay(100);
+    // Right Fomula Dewpoint 
+    // Dewpoint = (bα(T,RH)) / (a - α(T,RH))
+    // b = 243.12
+    // a = 17.62 
+    // α(T,RH) = ln(RH/100) + aT/(b+T)
+
+    
+    alpha = (log10(humidity_out)-2.0)/0.4343+(17.62*temp_out)/(243.12+temp_out);
+//    dewpoint = ((temp_out - ((100 - humidity_out)) / 5.0));
+    dewpoint = 243.12*alpha/(17.62-alpha);
     Serial.print("inh-");
     Serial.print(humidity_in);
     Serial.print(" ");
@@ -72,14 +83,14 @@ void loop() {
     Serial.print("dp-");
     Serial.println(dewpoint);
     
-    if (inwater >= dewpoint-2.0){
-      coldpump(1000);
+    if (temp_in >= dewpoint-5.0){
+      coldpump(500);
     }
     else{
-      hotpump(1000);
+      hotpump(500);
     }
    
-
+  stoppump(1000);
     
     
 } 
@@ -99,4 +110,5 @@ void hotpump(int delays){
 void stoppump(int delays){
   analogWrite(EN1, 0);
   analogWrite(EN2, 0);
+  delay(delays);
 }
